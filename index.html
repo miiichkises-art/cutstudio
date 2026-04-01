@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#ff2d6b">
+<meta name="description" content="Editor de video con IA para creadores — subtítulos, guiones, limpieza de audio y generador de reels">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="cut.studio">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<title>cut.studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & TOKENS ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0a0812;--ink2:#12101e;--ink3:#1a1828;
+  --border:#252340;--border2:#32304a;
+  --text:#e8e4f8;--muted:#6860a0;--hint:#3a3860;
+  --acc:#ff2d6b;--acc2:#ffb800;--acc3:#00e5a0;--acc4:#6b4fff;
+  --acc-dim:#1a0812;
+  --r:10px;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--ink);color:var(--text);display:flex;flex-direction:column}
+
+/* ── GRID BG ── */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:0.2;pointer-events:none;z-index:0}
+
+/* ── NAV ── */
+#nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:50px;background:rgba(10,8,18,0.95);border-bottom:0.5px solid var(--border);flex-shrink:0}
+.logo{display:flex;align-items:baseline;gap:1px;cursor:pointer}
+.logo-word{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:0.04em;color:var(--text)}
+.logo-dot{color:var(--acc);font-size:26px;line-height:1}
+.logo-ver{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-left:6px;background:var(--ink3);padding:2px 6px;border-radius:4px;border:0.5px solid var(--border)}
+.nav-tabs{display:flex;gap:2px}
+.ntab{padding:5px 13px;border-radius:7px;border:none;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;gap:5px}
+.ntab:hover{color:var(--text);background:var(--ink3)}
+.ntab.on{color:var(--text);background:var(--ink3);border:0.5px solid var(--border2)}
+.ntab .td{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.ntab.on .td{background:var(--acc3);box-shadow:0 0 6px var(--acc3)}
+.nav-r{display:flex;align-items:center;gap:8px}
+.btn-install{padding:5px 13px;border-radius:7px;border:0.5px solid var(--acc);background:var(--acc-dim);color:var(--acc);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;transition:all .15s}
+.btn-install:hover{background:var(--acc);color:#fff}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--acc4),var(--acc));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#fff;cursor:pointer;flex-shrink:0}
+
+/* ── LAYOUT ── */
+#app{position:relative;z-index:5;flex:1;overflow:hidden;display:flex;flex-direction:column}
+.page{display:none;flex:1;flex-direction:column;overflow:hidden}
+.page.on{display:flex}
+
+/* ── HOME ── */
+.home-hero{padding:24px 22px 16px;border-bottom:0.5px solid var(--border)}
+.home-greeting{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:0.02em;line-height:1}
+.home-greeting em{font-style:normal;color:var(--acc)}
+.home-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.home-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 22px;border-bottom:0.5px solid var(--border)}
+.scard{background:var(--ink2);border:0.5px solid var(--border);border-radius:var(--r);padding:11px 13px}
+.scard-num{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:0.02em}
+.scard-lbl{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.06em;margin-top:2px}
+.home-grid{padding:14px 22px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;overflow-y:auto;flex:1}
+.mcard{background:var(--ink2);border:0.5px solid var(--border);border-radius:var(--r);padding:15px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.mcard:hover{border-color:var(--border2);transform:translateY(-1px)}
+.mcard-top{position:absolute;top:0;left:0;right:0;height:2px}
+.mcard-icon{font-size:20px;margin-bottom:9px}
+.mcard-title{font-size:13px;font-weight:500;margin-bottom:3px}
+.mcard-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.mcard-badge{display:inline-block;font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;margin-top:7px}
+.mcard-arr{position:absolute;right:13px;top:13px;font-size:13px;color:var(--border2);transition:color .15s}
+.mcard:hover .mcard-arr{color:var(--text)}
+.mcard-wide{grid-column:1/-1}
+
+/* ── EDITOR ── */
+.editor-wrap{display:flex;flex:1;overflow:hidden}
+.ed-bar{width:48px;background:var(--ink2);border-right:0.5px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:5px;flex-shrink:0}
+.etool{width:34px;height:34px;border-radius:7px;border:0.5px solid transparent;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
+.etool:hover{background:var(--ink3);color:var(--text)}
+.etool.on{background:var(--acc-dim);border-color:#3a1028;color:var(--acc)}
+.esep{width:26px;height:0.5px;background:var(--border);margin:3px 0}
+.ed-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.ed-preview{flex:1;background:#050508;display:flex;align-items:center;justify-content:center;position:relative}
+.ed-screen{width:100%;max-width:520px;aspect-ratio:16/9;background:var(--ink3);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.ed-screen video{width:100%;height:100%;object-fit:contain;display:none}
+.ed-screen.has-v video{display:block}
+.ed-screen.has-v .ed-ph{display:none}
+.ed-ph{text-align:center;color:var(--hint)}
+.ed-ph .big{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:0.04em;color:var(--border2)}
+.txt-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;display:none}
+.txt-ov.on{display:block}
+.txt-ov span{display:inline-block;padding:5px 12px;border-radius:5px;font-size:15px;font-weight:500;line-height:1.4}
+.ed-ctrl{padding:9px 14px;background:var(--ink2);border-top:0.5px solid var(--border);display:flex;align-items:center;gap:7px;flex-shrink:0}
+.ec-btn{width:30px;height:30px;border-radius:6px;border:0.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.ec-btn:hover{background:var(--ink3);color:var(--text)}
+.ec-play{background:var(--acc-dim);border-color:#3a1028;color:var(--acc)}
+.tc{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin:0 4px}
+.ed-tl{height:110px;background:var(--ink);border-top:0.5px solid var(--border);padding:7px 12px;flex-shrink:0;display:flex;flex-direction:column;gap:5px}
+.tl-row{display:flex;align-items:center;gap:6px}
+.tl-lbl{width:44px;font-size:9px;color:var(--hint);font-family:'DM Mono',monospace;text-align:right;flex-shrink:0}
+.tl-lane{flex:1;height:22px;background:var(--ink2);border-radius:4px;position:relative;overflow:hidden}
+.tl-clip{position:absolute;top:2px;height:18px;border-radius:3px;display:flex;align-items:center;padding:0 6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer}
+.tl-ph{position:absolute;top:0;bottom:0;width:1.5px;background:var(--acc);pointer-events:none}
+.ed-side{width:185px;background:var(--ink2);border-left:0.5px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;overflow-y:auto}
+.es-lbl{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;margin:6px 0 3px}
+.es-btn{width:100%;padding:6px 9px;border-radius:7px;border:0.5px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;transition:all .15s;margin-bottom:3px}
+.es-btn:hover{background:var(--ink3);color:var(--text)}
+.es-inp{width:100%;padding:6px 9px;border-radius:6px;border:0.5px solid var(--border2);background:var(--ink3);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif}
+.es-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.es-row label{font-size:10px;color:var(--muted);display:flex;justify-content:space-between}
+.es-row label span{color:var(--acc3)}
+.sw-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.sw{width:22px;height:22px;border-radius:4px;cursor:pointer;border:1.5px solid transparent}
+.sw.on{border-color:var(--acc)}
+.apply{width:100%;padding:7px;border-radius:7px;border:none;background:var(--acc);color:#fff;font-size:12px;font-weight:500;cursor:pointer;margin-top:4px}
+.apply:hover{background:#e0205a}
+
+/* ── AUDIO ── */
+.audio-wrap{display:flex;flex:1;overflow:hidden}
+.aud-left{width:195px;background:var(--ink2);border-right:0.5px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;overflow-y:auto}
+.nb{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:7px;border:0.5px solid transparent;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;width:100%;text-align:left;transition:all .15s;font-family:'DM Sans',sans-serif}
+.nb:hover{background:var(--ink3);color:var(--text)}
+.nb.on{background:#0a1a14;color:var(--acc3);border-color:#1a3a2a}
+.nb-ic{width:26px;height:26px;border-radius:5px;background:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.nb.on .nb-ic{background:#0a2a1a}
+.aud-center{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px;gap:10px}
+.drop-zone{border:1.5px dashed var(--border2);border-radius:10px;padding:26px 16px;text-align:center;cursor:pointer;transition:border-color .2s}
+.drop-zone:hover{border-color:var(--acc3)}
+.drop-zone p{font-size:12px;color:var(--muted)}
+.drop-zone span{color:var(--acc3)}
+#wv-wrap{background:var(--ink2);border-radius:8px;border:0.5px solid var(--border);overflow:hidden;display:none}
+#wv-wrap.on{display:block}
+#wv{width:100%;height:80px;display:block}
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meter{background:var(--ink2);border:0.5px solid var(--border);border-radius:8px;padding:9px 11px}
+.m-lbl{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.06em;margin-bottom:5px}
+.m-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:4px}
+.m-fill{height:100%;border-radius:3px;transition:width .4s}
+.m-val{font-size:16px;font-weight:500}
+.eq-wrap{display:flex;gap:6px;justify-content:space-between}
+.eq-band{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1}
+.eq-band label{font-size:9px;color:var(--muted)}
+input[type=range].eq-v{writing-mode:vertical-lr;direction:rtl;width:18px;height:60px;cursor:pointer}
+.eq-v-val{font-size:10px;color:var(--acc3)}
+.aud-ctrl{padding:9px 14px;background:var(--ink2);border-top:0.5px solid var(--border);display:flex;align-items:center;gap:7px;flex-shrink:0}
+.ac-btn{width:30px;height:30px;border-radius:7px;border:0.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.ac-btn:hover{background:var(--ink3);color:var(--text)}
+.ac-play{background:#0a1a14;border-color:#1a3a2a;color:var(--acc3)}
+.proc-btn{margin-left:auto;padding:6px 16px;border-radius:7px;border:none;background:var(--acc3);color:#0d2018;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.proc-btn:hover{background:#00cca0}
+.proc-btn:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+.aud-right{width:190px;background:var(--ink2);border-left:0.5px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;overflow-y:auto}
+.pre-btn{width:100%;padding:6px 9px;border-radius:6px;border:0.5px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;text-align:left;margin-bottom:3px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.pre-btn:hover{background:var(--ink3);color:var(--text)}
+.pre-btn.on{background:#0a1a14;color:var(--acc3);border-color:#1a3a2a}
+
+/* ── IA ── */
+.ia-tabs{display:flex;border-bottom:0.5px solid var(--border);background:var(--ink2);flex-shrink:0}
+.iatab{padding:9px 18px;font-size:12px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif}
+.iatab:hover{color:var(--text)}
+.iatab.on{color:var(--acc4);border-bottom-color:var(--acc4)}
+.ia-panel{display:none;flex:1;overflow:hidden}
+.ia-panel.on{display:flex}
+
+/* SUBS */
+.sub-left{width:195px;background:var(--ink2);border-right:0.5px solid var(--border);padding:12px;overflow-y:auto;flex-shrink:0}
+.sub-center{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.sub-prev{flex:1;background:#050508;display:flex;align-items:center;justify-content:center;position:relative}
+.sub-frame{height:100%;max-height:340px;aspect-ratio:9/16;background:var(--ink3);border-radius:8px;position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;padding-bottom:20px}
+.sub-txt{font-size:14px;font-weight:500;text-align:center;padding:6px 12px;border-radius:5px;max-width:90%;line-height:1.4}
+.sub-list{height:140px;border-top:0.5px solid var(--border);overflow-y:auto;background:var(--ink2);padding:6px}
+.sub-item{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:5px;cursor:pointer;font-size:12px}
+.sub-item:hover,.sub-item.on{background:var(--ink3)}
+.sub-time{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;min-width:40px}
+.sub-right{width:185px;background:var(--ink2);border-left:0.5px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+
+/* SCRIPT */
+.sc-body{display:flex;flex:1;overflow:hidden}
+.sc-left{width:185px;background:var(--ink2);border-right:0.5px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.sc-center{flex:1;padding:14px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.sc-inp{width:100%;padding:7px 10px;border-radius:7px;border:0.5px solid var(--border2);background:var(--ink3);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif}
+.sc-ta{height:60px;resize:none}
+.sc-out{flex:1;background:var(--ink2);border-radius:8px;border:0.5px solid var(--border);padding:12px;overflow-y:auto;font-size:13px;line-height:1.8;color:var(--text);white-space:pre-wrap;min-height:80px}
+.sc-actions{display:flex;gap:6px}
+.sc-actions button{flex:1;padding:6px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.sc-actions button:hover{background:var(--ink3);color:var(--text)}
+.gen-btn{padding:8px;border-radius:7px;border:none;background:var(--acc4);color:#fff;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.gen-btn:hover{background:#5a3eee}
+.gen-btn:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+
+/* ── REELS ── */
+.reel-wrap{display:flex;flex:1;overflow:hidden}
+.rl-left{width:195px;background:var(--ink2);border-right:0.5px solid var(--border);padding:12px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;gap:4px}
+.rl-center{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.rl-prev{flex:1;background:#050508;display:flex;align-items:center;justify-content:center;position:relative}
+.reel-frame{height:100%;max-height:380px;aspect-ratio:9/16;background:var(--ink3);border-radius:10px;position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;padding-bottom:30px}
+.rl-prog{position:absolute;top:0;left:0;right:0;height:2px;background:transparent}
+.rl-prog-bar{height:100%;background:var(--acc);width:0%;transition:width .1s}
+.reel-sub-txt{font-size:13px;font-weight:600;text-align:center;padding:6px 12px;border-radius:5px;background:rgba(0,0,0,0.7);color:#fff;max-width:90%;line-height:1.4}
+.rl-beats{position:absolute;bottom:50px;left:0;right:0;display:flex;justify-content:center;gap:3px}
+.beat-b{width:3px;border-radius:2px;background:var(--acc);opacity:0.6}
+.rl-ctrl{padding:9px 14px;background:var(--ink2);border-top:0.5px solid var(--border);display:flex;align-items:center;gap:7px;flex-shrink:0}
+.rc-btn{width:30px;height:30px;border-radius:6px;border:0.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.rc-btn:hover{background:var(--ink3);color:var(--text)}
+.rc-play{background:var(--acc-dim);border-color:#3a1028;color:var(--acc)}
+.regen-btn{margin-left:auto;padding:6px 15px;border-radius:7px;border:none;background:var(--acc);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.regen-btn:hover{background:#e0205a}
+.regen-btn:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+.rl-tl{height:100px;background:var(--ink);border-top:0.5px solid var(--border);padding:6px 12px;flex-shrink:0;display:flex;flex-direction:column;gap:4px}
+.rl-right{width:185px;background:var(--ink2);border-left:0.5px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;overflow-y:auto}
+.ai-panel{background:var(--ink3);border-radius:8px;border:0.5px solid var(--border);padding:11px;display:none}
+.ai-panel.on{display:block}
+.ai-score{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.02em}
+.ai-metric{font-size:10px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:4px;font-family:'DM Mono',monospace}
+.ai-metric span{color:var(--text)}
+.ai-bar{height:4px;background:var(--border);border-radius:2px;margin-bottom:6px;overflow:hidden}
+.ai-fill{height:100%;border-radius:2px;transition:width .6s}
+
+/* ── PROJECTS ── */
+.proj-wrap{padding:18px 22px;overflow-y:auto;flex:1}
+.proj-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.proj-hdr h2{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.04em}
+.proj-new{padding:5px 13px;border-radius:7px;border:0.5px solid var(--acc);background:var(--acc-dim);color:var(--acc);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace}
+.proj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.proj-card{background:var(--ink2);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .15s}
+.proj-card:hover{border-color:var(--border2)}
+.proj-thumb{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:26px}
+.proj-info{padding:9px 11px}
+.proj-name{font-size:13px;font-weight:500;margin-bottom:2px}
+.proj-meta{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.proj-tags{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.proj-tag{font-size:9px;padding:2px 7px;border-radius:10px;font-family:'DM Mono',monospace}
+
+/* ── STATUS BAR ── */
+#status-bar{position:relative;z-index:10;padding:6px 18px;background:var(--ink);border-top:0.5px solid var(--border);display:flex;align-items:center;gap:7px;flex-shrink:0}
+#sb-dot{width:5px;height:5px;border-radius:50%;background:var(--border2);flex-shrink:0}
+#sb-dot.on{background:var(--acc3);animation:sbpulse 1s infinite}
+@keyframes sbpulse{0%,100%{opacity:1}50%{opacity:.25}}
+#sb-txt{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+#sb-right{margin-left:auto;display:flex;gap:6px}
+.sb-action{padding:4px 11px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;border:none;transition:all .15s}
+.sb-action.acc{background:var(--acc);color:#fff}
+.sb-action.acc:hover{background:#e0205a}
+.sb-action.sec{background:transparent;border:0.5px solid var(--border2);color:var(--muted)}
+.sb-action.sec:hover{background:var(--ink3);color:var(--text)}
+
+/* ── INSTALL MODAL ── */
+#modal-install{display:none;position:fixed;inset:0;z-index:100;background:rgba(5,5,12,.88);align-items:center;justify-content:center}
+#modal-install.on{display:flex}
+.modal-box{background:var(--ink2);border:0.5px solid var(--border2);border-radius:16px;padding:26px;max-width:330px;width:90%;position:relative}
+.modal-close{position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--muted);font-size:16px;cursor:pointer}
+.modal-logo{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.04em}
+.modal-logo em{font-style:normal;color:var(--acc)}
+.modal-sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:14px}
+.plat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.plat{padding:9px 11px;border-radius:8px;border:0.5px solid var(--border2);background:var(--ink3);color:var(--text);font-size:12px;cursor:pointer;text-align:left;transition:all .15s}
+.plat:hover{border-color:var(--acc)}
+.plat-ic{font-size:17px;margin-bottom:3px}
+.plat-name{font-size:11px;font-weight:500}
+.plat-hint{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace}
+.modal-steps{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.mstep{display:flex;gap:9px;align-items:flex-start}
+.msn{width:20px;height:20px;border-radius:50%;background:var(--acc-dim);border:0.5px solid var(--acc);color:var(--acc);font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace}
+.mstxt{font-size:12px;color:var(--muted);line-height:1.5;padding-top:2px}
+.mstxt strong{color:var(--text)}
+.modal-url{background:var(--ink);border:0.5px solid var(--border2);border-radius:7px;padding:7px 11px;font-size:11px;font-family:'DM Mono',monospace;color:var(--acc3);display:flex;align-items:center;justify-content:space-between}
+.copy-url{background:transparent;border:none;color:var(--acc3);cursor:pointer;font-size:10px;font-family:'DM Mono',monospace}
+
+/* ── MISC ── */
+input[type=file]{display:none}
+input[type=range]{cursor:pointer}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="logo" onclick="goTo('home')">
+    <span class="logo-word">CUT</span><span class="logo-dot">.</span><span class="logo-word">STUDIO</span>
+    <span class="logo-ver">v1.0</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="ntab on" id="tab-home"     onclick="goTo('home',this)"><div class="td"></div>Inicio</button>
+    <button class="ntab"    id="tab-editor"   onclick="goTo('editor',this)"><div class="td"></div>Editor</button>
+    <button class="ntab"    id="tab-audio"    onclick="goTo('audio',this)"><div class="td"></div>Audio</button>
+    <button class="ntab"    id="tab-ia"       onclick="goTo('ia',this)"><div class="td"></div>IA</button>
+    <button class="ntab"    id="tab-reels"    onclick="goTo('reels',this)"><div class="td"></div>Reels</button>
+    <button class="ntab"    id="tab-projects" onclick="goTo('projects',this)"><div class="td"></div>Proyectos</button>
+  </div>
+  <div class="nav-r">
+    <button class="btn-install" onclick="showInstall()">⬇ Instalar</button>
+    <div class="avatar" title="De la Garza Studio">M</div>
+  </div>
+</nav>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- HOME -->
+  <div class="page on" id="pg-home">
+    <div class="home-hero">
+      <div class="home-greeting">Bienvenida, <em>Mich</em></div>
+      <div class="home-sub">De la Garza Studio · cut.studio — todas las fases activas</div>
+    </div>
+    <div class="home-stats">
+      <div class="scard"><div class="scard-num" style="color:var(--acc)">5</div><div class="scard-lbl">FASES</div></div>
+      <div class="scard"><div class="scard-num" style="color:var(--acc3)">4</div><div class="scard-lbl">MÓDULOS IA</div></div>
+      <div class="scard"><div class="scard-num" style="color:var(--acc2)">∞</div><div class="scard-lbl">PROYECTOS</div></div>
+      <div class="scard"><div class="scard-num" style="color:var(--acc4)">PWA</div><div class="scard-lbl">INSTALABLE</div></div>
+    </div>
+    <div class="home-grid">
+      <div class="mcard" onclick="goTo('editor',document.getElementById('tab-editor'))">
+        <div class="mcard-top" style="background:linear-gradient(90deg,var(--acc),transparent)"></div>
+        <div class="mcard-arr">→</div>
+        <div class="mcard-icon">✂</div>
+        <div class="mcard-title">Editor de video</div>
+        <div class="mcard-desc">Cortes, texto sobre video y timeline con tres pistas.</div>
+        <div class="mcard-badge" style="background:#2a0818;color:var(--acc);border:0.5px solid #3a1028">FASE 1</div>
+      </div>
+      <div class="mcard" onclick="goTo('audio',document.getElementById('tab-audio'))">
+        <div class="mcard-top" style="background:linear-gradient(90deg,var(--acc3),transparent)"></div>
+        <div class="mcard-arr">→</div>
+        <div class="mcard-icon">🎙</div>
+        <div class="mcard-title">Limpieza de audio</div>
+        <div class="mcard-desc">Elimina gallinas, viento, tráfico y todo tipo de ruido. EQ de 6 bandas.</div>
+        <div class="mcard-badge" style="background:#0a2018;color:var(--acc3);border:0.5px solid #1a4030">FASE 2</div>
+      </div>
+      <div class="mcard" onclick="goTo('ia',document.getElementById('tab-ia'))">
+        <div class="mcard-top" style="background:linear-gradient(90deg,var(--acc4),transparent)"></div>
+        <div class="mcard-arr">→</div>
+        <div class="mcard-icon">✦</div>
+        <div class="mcard-title">IA — Subtítulos y guiones</div>
+        <div class="mcard-desc">Transcripción automática, guiones El Cantinero, voiceover.</div>
+        <div class="mcard-badge" style="background:#1a1030;color:var(--acc4);border:0.5px solid #3a2060">FASE 3</div>
+      </div>
+      <div class="mcard" onclick="goTo('reels',document.getElementById('tab-reels'))">
+        <div class="mcard-top" style="background:linear-gradient(90deg,var(--acc2),transparent)"></div>
+        <div class="mcard-arr">→</div>
+        <div class="mcard-icon">▶</div>
+        <div class="mcard-title">Reel Engine</div>
+        <div class="mcard-desc">Generador automático con beat sync y viral score por IA.</div>
+        <div class="mcard-badge" style="background:#1a1400;color:var(--acc2);border:0.5px solid #3a3000">FASE 4</div>
+      </div>
+      <div class="mcard mcard-wide" onclick="showInstall()">
+        <div class="mcard-top" style="background:linear-gradient(90deg,var(--acc),var(--acc4),transparent)"></div>
+        <div class="mcard-arr">→</div>
+        <div style="display:flex;align-items:center;gap:13px">
+          <div class="mcard-icon" style="margin:0">📱</div>
+          <div>
+            <div class="mcard-title">Instalar como app en tu celular</div>
+            <div class="mcard-desc">PWA — instala en iPhone o Android sin App Store. Funciona offline.</div>
+          </div>
+        </div>
+        <div class="mcard-badge" style="background:#1a0018;color:var(--acc);border:0.5px solid #3a0030;margin-top:9px">FASE 5 · PWA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR -->
+  <div class="page" id="pg-editor">
+    <div class="editor-wrap">
+      <div class="ed-bar">
+        <button class="etool on" id="et-sel" onclick="setEdTool('sel',this)" title="Seleccionar">↖</button>
+        <button class="etool" id="et-cut" onclick="setEdTool('cut',this)" title="Cortar">✂</button>
+        <button class="etool" id="et-txt" onclick="setEdTool('txt',this)" title="Texto">T</button>
+        <div class="esep"></div>
+        <button class="etool" onclick="goTo('audio',document.getElementById('tab-audio'))" title="Audio">🎙</button>
+        <button class="etool" onclick="goTo('ia',document.getElementById('tab-ia'))" title="IA">✦</button>
+        <button class="etool" onclick="goTo('reels',document.getElementById('tab-reels'))" title="Reels">▶</button>
+        <div class="esep"></div>
+        <button class="etool" onclick="document.getElementById('fi-vid').click()" title="Importar">⬆</button>
+      </div>
+      <div class="ed-main">
+        <div class="ed-preview">
+          <div class="ed-screen" id="ed-screen">
+            <video id="ed-vid"></video>
+            <div class="txt-ov" id="ed-txt-ov"><span id="ed-txt-span"></span></div>
+            <div class="ed-ph">
+              <div class="big">CUT.STUDIO</div>
+              <div style="font-size:12px;margin-top:6px">Importa un video para comenzar</div>
+              <button class="apply" style="margin-top:12px;width:auto;padding:6px 16px" onclick="document.getElementById('fi-vid').click()">+ Importar video</button>
+            </div>
+          </div>
+        </div>
+        <div class="ed-ctrl">
+          <button class="ec-btn" onclick="edSeek(0)">⏮</button>
+          <button class="ec-btn ec-play" id="ed-playbtn" onclick="edTogglePlay()">▶</button>
+          <button class="ec-btn" onclick="edSeekEnd()">⏭</button>
+          <span class="tc" id="ed-tc">0:00 / 0:00</span>
+          <button class="ec-btn" onclick="edCut()" title="Marcar corte">✂</button>
+          <input type="range" id="ed-vol" min="0" max="1" step="0.01" value="1" style="width:70px" oninput="edVol(this.value)">
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button style="padding:5px 11px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;cursor:pointer" onclick="goTo('reels',document.getElementById('tab-reels'))">→ Reel Engine</button>
+            <button class="apply" style="width:auto;padding:5px 14px;margin:0;font-size:11px" onclick="setStatus('Exportando… (función disponible con FFmpeg.wasm en próxima versión)',true)">Exportar</button>
+          </div>
+        </div>
+        <div class="ed-tl">
+          <div class="tl-row"><div class="tl-lbl">VIDEO</div><div class="tl-lane" id="tl-v"><div class="tl-ph" id="ph-v"></div></div></div>
+          <div class="tl-row"><div class="tl-lbl">AUDIO</div><div class="tl-lane" id="tl-a"><div class="tl-ph" id="ph-a"></div></div></div>
+          <div class="tl-row"><div class="tl-lbl">TEXTO</div><div class="tl-lane" id="tl-t"><div class="tl-ph" id="ph-t"></div></div></div>
+        </div>
+      </div>
+      <div class="ed-side" id="ed-side">
+        <div class="es-lbl">Herramienta activa</div>
+        <div id="ed-tool-panel">
+          <div style="font-size:12px;color:var(--muted)">Selecciona una herramienta</div>
+        </div>
+        <div class="es-lbl" style="margin-top:auto">Proyecto</div>
+        <input class="es-inp" type="text" placeholder="Sin título" id="proj-name">
+        <button class="apply" onclick="saveProject()">Guardar proyecto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIO -->
+  <div class="page" id="pg-audio">
+    <div class="audio-wrap">
+      <div class="aud-left">
+        <div class="es-lbl">Tipo de ruido</div>
+        <button class="nb on" id="nb-all" onclick="setNoise('all',this)"><div class="nb-ic">✦</div>Todo el ruido</button>
+        <button class="nb" id="nb-animals" onclick="setNoise('animals',this)"><div class="nb-ic">🐔</div>Animales</button>
+        <button class="nb" id="nb-wind" onclick="setNoise('wind',this)"><div class="nb-ic">💨</div>Viento</button>
+        <button class="nb" id="nb-hum" onclick="setNoise('hum',this)"><div class="nb-ic">〰</div>Zumbido / AC</button>
+        <button class="nb" id="nb-traffic" onclick="setNoise('traffic',this)"><div class="nb-ic">🚗</div>Tráfico</button>
+        <button class="nb" id="nb-crowd" onclick="setNoise('crowd',this)"><div class="nb-ic">👥</div>Multitud</button>
+        <button class="nb" id="nb-click" onclick="setNoise('click',this)"><div class="nb-ic">⚡</div>Clic / estática</button>
+        <div class="es-lbl" style="margin-top:10px">Fuente</div>
+        <button class="nb" onclick="document.getElementById('fi-audio').click()"><div class="nb-ic">🎵</div>Audio MP3/WAV</button>
+        <button class="nb" onclick="document.getElementById('fi-audio').click()"><div class="nb-ic">🎬</div>Video con audio</button>
+      </div>
+      <div class="aud-center">
+        <div class="drop-zone" id="aud-drop" onclick="document.getElementById('fi-audio').click()">
+          <div style="font-size:30px;opacity:.4;margin-bottom:8px">🎙</div>
+          <p>Arrastra tu archivo o <span>selecciona</span></p>
+          <p style="font-size:10px;color:var(--hint);margin-top:4px">MP3 · WAV · MP4 · MOV · M4A</p>
+        </div>
+        <div id="wv-wrap"><canvas id="wv" height="80"></canvas></div>
+        <div class="meters">
+          <div class="meter"><div class="m-lbl">NIVEL ORIGINAL</div><div class="m-bar"><div class="m-fill" id="mf-orig" style="width:0%;background:var(--acc)"></div></div><div class="m-val" id="mv-orig" style="color:var(--acc)">—</div></div>
+          <div class="meter"><div class="m-lbl">NIVEL LIMPIO</div><div class="m-bar"><div class="m-fill" id="mf-clean" style="width:0%;background:var(--acc3)"></div></div><div class="m-val" id="mv-clean" style="color:var(--acc3)">—</div></div>
+          <div class="meter"><div class="m-lbl">RUIDO DETECTADO</div><div class="m-bar"><div class="m-fill" id="mf-noise" style="width:0%;background:#c87060"></div></div><div class="m-val" id="mv-noise" style="color:#c87060">—</div></div>
+          <div class="meter"><div class="m-lbl">CALIDAD FINAL</div><div class="m-bar"><div class="m-fill" id="mf-qual" style="width:0%;background:var(--acc3)"></div></div><div class="m-val" id="mv-qual" style="color:var(--acc3)">—</div></div>
+        </div>
+        <div class="es-lbl">Ecualizador (dB)</div>
+        <div class="eq-wrap">
+          <div class="eq-band"><div class="eq-v-val" id="ev60">0</div><input type="range" class="eq-v" min="-12" max="12" value="0" step="1" oninput="updEQ('60',this.value)"><label>60hz</label></div>
+          <div class="eq-band"><div class="eq-v-val" id="ev250">0</div><input type="range" class="eq-v" min="-12" max="12" value="0" step="1" oninput="updEQ('250',this.value)"><label>250hz</label></div>
+          <div class="eq-band"><div class="eq-v-val" id="ev1k">0</div><input type="range" class="eq-v" min="-12" max="12" value="0" step="1" oninput="updEQ('1k',this.value)"><label>1kHz</label></div>
+          <div class="eq-band"><div class="eq-v-val" id="ev4k">0</div><input type="range" class="eq-v" min="-12" max="12" value="0" step="1" oninput="updEQ('4k',this.value)"><label>4kHz</label></div>
+          <div class="eq-band"><div class="eq-v-val" id="ev8k">0</div><input type="range" class="eq-v" min="-12" max="12" value="0" step="1" oninput="updEQ('8k',this.value)"><label>8kHz</label></div>
+          <div class="eq-band"><div class="eq-v-val" id="ev16k">0</div><input type="range" class="eq-v" min="-12" max="12" value="0" step="1" oninput="updEQ('16k',this.value)"><label>16kHz</label></div>
+        </div>
+      </div>
+      <div class="aud-ctrl">
+        <button class="ac-btn" onclick="audSeek(0)">⏮</button>
+        <button class="ac-btn ac-play" id="aud-playbtn" onclick="audTogglePlay()">▶</button>
+        <button class="ac-btn" onclick="audSeekEnd()">⏭</button>
+        <span class="tc" id="aud-tc">0:00 / 0:00</span>
+        <button class="proc-btn" id="proc-btn" disabled onclick="processAudio()">Limpiar audio ✦</button>
+        <button id="dl-btn" style="display:none;padding:6px 13px;border-radius:7px;border:0.5px solid var(--acc3);background:#0a1a14;color:var(--acc3);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace" onclick="downloadClean()">Descargar</button>
+      </div>
+      <div class="aud-right">
+        <div class="es-lbl">Intensidad</div>
+        <div class="es-row"><label>Reducción <span id="nr-v">70%</span></label><input type="range" min="0" max="100" value="70" step="1" oninput="document.getElementById('nr-v').textContent=this.value+'%'"></div>
+        <div class="es-row"><label>Voz preservada <span id="vp-v">80%</span></label><input type="range" min="0" max="100" value="80" step="1" oninput="document.getElementById('vp-v').textContent=this.value+'%'"></div>
+        <div class="es-row"><label>Volumen <span id="vo-v">100%</span></label><input type="range" min="0" max="100" value="100" step="1" oninput="document.getElementById('vo-v').textContent=this.value+'%';audVol(this.value)"></div>
+        <div class="es-lbl" style="margin-top:6px">Presets</div>
+        <button class="pre-btn on" onclick="applyPreset('balanced',this)">Balanceado</button>
+        <button class="pre-btn" onclick="applyPreset('voice',this)">Solo voz</button>
+        <button class="pre-btn" onclick="applyPreset('outdoor',this)">Exterior / campo</button>
+        <button class="pre-btn" onclick="applyPreset('studio',this)">Calidad estudio</button>
+        <button class="pre-btn" onclick="applyPreset('podcast',this)">Podcast</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IA -->
+  <div class="page" id="pg-ia">
+    <div class="ia-tabs">
+      <div class="iatab on" id="iat-subs" onclick="setIATab('subs',this)">Subtítulos automáticos</div>
+      <div class="iatab" id="iat-script" onclick="setIATab('script',this)">Generador de guiones</div>
+      <div class="iatab" id="iat-vo" onclick="setIATab('vo',this)">Voiceover IA</div>
+    </div>
+    <!-- SUBS -->
+    <div class="ia-panel on" id="iap-subs">
+      <div class="sub-left">
+        <div class="es-lbl">Idioma</div>
+        <select class="es-inp" id="sub-lang" style="margin-bottom:8px"><option value="es-MX">Español México</option><option value="es">Español</option><option value="en">Inglés</option></select>
+        <div class="es-lbl">Color texto</div>
+        <div class="sw-row">
+          <div class="sw on" style="background:#fff" onclick="setSubColor('#fff',this)"></div>
+          <div class="sw" style="background:#ffe066" onclick="setSubColor('#ffe066',this)"></div>
+          <div class="sw" style="background:var(--acc4)" onclick="setSubColor('#6b4fff',this)"></div>
+          <div class="sw" style="background:var(--acc3)" onclick="setSubColor('#00e5a0',this)"></div>
+          <div class="sw" style="background:var(--acc)" onclick="setSubColor('#ff2d6b',this)"></div>
+        </div>
+        <div class="es-lbl">Fondo</div>
+        <div class="sw-row">
+          <div class="sw on" style="background:rgba(0,0,0,0.7);border-color:var(--acc)" onclick="setSubBg('rgba(0,0,0,0.7)',this)"></div>
+          <div class="sw" style="background:var(--acc4)" onclick="setSubBg('#6b4fff',this)"></div>
+          <div class="sw" style="background:#0a1a14" onclick="setSubBg('#0a1a14',this)"></div>
+          <div class="sw" style="background:transparent;border-style:dashed!important" onclick="setSubBg('transparent',this)"></div>
+        </div>
+        <div class="es-lbl">Tamaño</div>
+        <div class="es-row"><label>Fuente <span id="fsz-v">14px</span></label><input type="range" min="11" max="28" value="14" step="1" oninput="setSubSize(this.value)"></div>
+        <div class="es-lbl">Posición</div>
+        <select class="es-inp" id="sub-pos" onchange="updSubPrev()"><option value="bottom">Abajo</option><option value="center">Centro</option><option value="top">Arriba</option></select>
+      </div>
+      <div class="sub-center">
+        <div class="sub-prev">
+          <div class="sub-frame" id="sub-frame">
+            <div class="sub-txt" id="sub-prev-txt" style="background:rgba(0,0,0,0.7);color:#fff">Aquí aparecerán tus subtítulos</div>
+          </div>
+        </div>
+        <div class="sub-list" id="sub-list"><div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Genera subtítulos para verlos aquí</div></div>
+      </div>
+      <div class="sub-right">
+        <div class="es-lbl">Generar</div>
+        <button class="apply" style="margin-bottom:6px" onclick="genSubs()">✦ Auto-transcribir</button>
+        <button class="es-btn" onclick="genSubs('demo')">Vista previa demo</button>
+        <div class="es-lbl" style="margin-top:8px">Exportar</div>
+        <button class="es-btn" onclick="exportSRT()">Descargar .SRT</button>
+        <button class="es-btn" onclick="exportVTT()">Descargar .VTT</button>
+        <div class="es-lbl" style="margin-top:8px">IA</div>
+        <button class="es-btn" onclick="askClaude('Optimiza estos subtítulos para TikTok e Instagram Reels para que enganchen más en los primeros 3 segundos. Responde solo con los subtítulos mejorados.')">Optimizar para redes</button>
+        <button class="es-btn" onclick="askClaude('Traduce estos subtítulos al inglés manteniendo el tono emotivo y cálido del original.')">Traducir al inglés</button>
+      </div>
+    </div>
+    <!-- SCRIPT -->
+    <div class="ia-panel" id="iap-script">
+      <div class="sc-body">
+        <div class="sc-left">
+          <div class="es-lbl">Tipo de video</div>
+          <button class="es-btn on" id="sf-cant" onclick="setSF('cant',this)">El Cantinero</button>
+          <button class="es-btn" id="sf-reel" onclick="setSF('reel',this)">Reel viral</button>
+          <button class="es-btn" id="sf-promo" onclick="setSF('promo',this)">Promo negocio</button>
+          <button class="es-btn" id="sf-tuto" onclick="setSF('tuto',this)">Tutorial</button>
+          <div class="es-lbl" style="margin-top:8px">Plataforma</div>
+          <button class="es-btn on" id="sp-tiktok" onclick="setSP('tiktok',this)">TikTok</button>
+          <button class="es-btn" id="sp-reels" onclick="setSP('reels',this)">Instagram Reels</button>
+          <button class="es-btn" id="sp-yt" onclick="setSP('yt',this)">YouTube</button>
+          <button class="es-btn" id="sp-fb" onclick="setSP('fb',this)">Facebook</button>
+        </div>
+        <div class="sc-center">
+          <input class="sc-inp" type="text" id="sc-topic" placeholder="Canción o tema (ej: La Bikina de Rubén Fuentes)">
+          <input class="sc-inp" type="text" id="sc-drink" placeholder="Bebida del episodio (ej: mezcal joven)">
+          <textarea class="sc-inp sc-ta" id="sc-ctx" placeholder="Emoción o contexto adicional..."></textarea>
+          <select class="sc-inp" id="sc-tone">
+            <option value="cant">Estilo cantinero — nostálgico y cálido</option>
+            <option value="viral">Viral — gancho rápido</option>
+            <option value="poet">Poético — narrativo profundo</option>
+            <option value="humor">Con humor ligero</option>
+          </select>
+          <select class="sc-inp" id="sc-dur">
+            <option value="30">30 segundos</option>
+            <option value="60">60 segundos</option>
+            <option value="90">90 segundos</option>
+            <option value="3min">3 minutos</option>
+          </select>
+          <button class="gen-btn" id="gen-btn" onclick="generateScript()">✦ Generar guión con IA</button>
+          <div class="sc-out" id="sc-out"><span style="color:var(--muted);font-size:12px">Llena el formulario y presiona "Generar guión"</span></div>
+          <div class="sc-actions">
+            <button onclick="copyScript()">Copiar</button>
+            <button onclick="generateScript()">Regenerar</button>
+            <button onclick="exportScript()">Guardar .txt</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- VOICEOVER -->
+    <div class="ia-panel" id="iap-vo">
+      <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto">
+        <div class="es-lbl">Texto para narrar</div>
+        <textarea class="sc-inp" id="vo-text" style="height:100px;resize:none" placeholder="Escribe o pega el guión que quieres convertir en voz..."></textarea>
+        <div style="display:flex;gap:8px">
+          <select class="sc-inp" style="flex:1" id="vo-speed"><option value="0.9">Velocidad: lenta</option><option value="1" selected>Normal</option><option value="1.2">Rápida</option></select>
+          <select class="sc-inp" style="flex:1" id="vo-voice"><option>El Cantinero</option><option>Narrador</option><option>Femenina</option></select>
+        </div>
+        <button class="apply" onclick="demoVoice()">▶ Escuchar demo (voz del navegador)</button>
+        <div style="background:var(--ink2);border-radius:8px;border:0.5px solid var(--border);padding:12px">
+          <div class="es-lbl" style="margin-bottom:6px">Nota sobre voiceover</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">Para producción real conecta ElevenLabs API en Ajustes. El demo usa la voz del navegador como referencia.</div>
+          <button class="es-btn" style="margin-top:8px;width:100%" onclick="askClaude('Escribe un texto corto y emotivo para voiceover de El Cantinero del Recuerdo, estilo narrador cinematográfico en español mexicano. Máximo 60 palabras.')">Escribir texto con IA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REELS -->
+  <div class="page" id="pg-reels">
+    <div class="reel-wrap">
+      <div class="rl-left">
+        <div class="es-lbl">Formato</div>
+        <button class="pre-btn on" id="rf-tiktok" onclick="setRF('tiktok',this)">TikTok · 9:16 · 60s</button>
+        <button class="pre-btn" id="rf-reels" onclick="setRF('reels',this)">Instagram Reels</button>
+        <button class="pre-btn" id="rf-yt" onclick="setRF('yt',this)">YouTube Short</button>
+        <button class="pre-btn" id="rf-story" onclick="setRF('story',this)">Story · 15s</button>
+        <div class="es-lbl" style="margin-top:8px">Estilo de corte</div>
+        <button class="pre-btn on" id="rc-beat" onclick="setRC('beat',this)">Beat sync</button>
+        <button class="pre-btn" id="rc-fast" onclick="setRC('fast',this)">Corte rápido</button>
+        <button class="pre-btn" id="rc-slow" onclick="setRC('slow',this)">Cinematográfico</button>
+        <button class="pre-btn" id="rc-cant" onclick="setRC('cant',this)">Cantinero</button>
+        <div class="es-lbl" style="margin-top:8px">Importar</div>
+        <button class="es-btn" onclick="document.getElementById('fi-reel').click()">+ Agregar clips</button>
+        <button class="es-btn" onclick="document.getElementById('fi-music').click()">+ Música</button>
+      </div>
+      <div class="rl-center">
+        <div class="rl-prev">
+          <div class="reel-frame">
+            <div class="rl-prog"><div class="rl-prog-bar" id="rl-prog-bar"></div></div>
+            <div class="rl-beats" id="rl-beats"></div>
+            <div class="reel-sub-txt" id="rl-sub-txt">Genera tu reel con IA</div>
+          </div>
+        </div>
+        <div class="rl-ctrl">
+          <button class="rc-btn" onclick="rlSeek(0)">⏮</button>
+          <button class="rc-btn rc-play" id="rl-playbtn" onclick="rlTogglePlay()">▶</button>
+          <button class="rc-btn" onclick="rlSeek(1)">⏭</button>
+          <span class="tc" id="rl-tc">0:00 / 0:00</span>
+          <button class="regen-btn" id="regen-btn" onclick="generateReel()">✦ Generar Reel con IA</button>
+          <button style="padding:5px 11px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;cursor:pointer" onclick="setStatus('Exportación con FFmpeg.wasm disponible en la próxima versión',true)">Exportar</button>
+        </div>
+        <div class="rl-tl">
+          <div class="tl-row"><div class="tl-lbl">VIDEO</div><div class="tl-lane" id="rl-lane-v"><div class="tl-ph" id="rl-ph-v"></div></div></div>
+          <div class="tl-row"><div class="tl-lbl">MÚSICA</div><div class="tl-lane" id="rl-lane-m"><div class="tl-ph" id="rl-ph-m"></div></div></div>
+          <div class="tl-row"><div class="tl-lbl">TEXTO</div><div class="tl-lane" id="rl-lane-t"><div class="tl-ph" id="rl-ph-t"></div></div></div>
+        </div>
+      </div>
+      <div class="rl-right">
+        <div class="es-lbl">Análisis IA</div>
+        <button class="apply" style="margin-bottom:6px" onclick="runAnalysis()">✦ Analizar viral score</button>
+        <div class="ai-panel" id="ai-panel">
+          <div class="ai-score" id="ai-score" style="color:var(--acc3)">—</div>
+          <div style="font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:8px">VIRAL SCORE / 100</div>
+          <div class="ai-metric">Enganche inicial <span id="ai-m1">—</span></div>
+          <div class="ai-bar"><div class="ai-fill" id="ai-b1" style="width:0%;background:var(--acc)"></div></div>
+          <div class="ai-metric">Ritmo de cortes <span id="ai-m2">—</span></div>
+          <div class="ai-bar"><div class="ai-fill" id="ai-b2" style="width:0%;background:var(--acc2)"></div></div>
+          <div class="ai-metric">Retención <span id="ai-m3">—</span></div>
+          <div class="ai-bar"><div class="ai-fill" id="ai-b3" style="width:0%;background:var(--acc3)"></div></div>
+        </div>
+        <div class="es-lbl" style="margin-top:8px">Parámetros</div>
+        <div class="es-row"><label>Duración <span id="rdur-v">30s</span></label><input type="range" min="15" max="180" value="30" step="15" oninput="document.getElementById('rdur-v').textContent=this.value+'s';reelDur=parseInt(this.value)"></div>
+        <div class="es-row"><label>Vol. música <span id="rvol-v">80%</span></label><input type="range" min="0" max="100" value="80" step="1" oninput="document.getElementById('rvol-v').textContent=this.value+'%'"></div>
+        <div class="es-lbl" style="margin-top:6px">IA creativa</div>
+        <button class="es-btn" onclick="askClaude('Dame el hook perfecto para un reel de El Cantinero del Recuerdo en TikTok. Que enganche en los primeros 2 segundos. Solo el hook, nada más.')">Hook para TikTok</button>
+        <button class="es-btn" onclick="askClaude('Dame 5 ideas de reels virales para El Cantinero del Recuerdo que combinen canciones mexicanas con mezcal y whiskey.')">Ideas virales</button>
+        <button class="es-btn" onclick="askClaude('¿Qué música sin copyright va mejor para un reel emotivo del Cantinero del Recuerdo? Dame 5 opciones con mood nostálgico.')">Sugerir música</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <div class="page" id="pg-projects">
+    <div class="proj-wrap">
+      <div class="proj-hdr">
+        <h2>Proyectos</h2>
+        <button class="proj-new" onclick="goTo('editor',document.getElementById('tab-editor'))">+ Nuevo proyecto</button>
+      </div>
+      <div class="proj-grid" id="proj-grid"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div id="status-bar">
+  <div id="sb-dot"></div>
+  <span id="sb-txt">cut.studio v1.0 — listo</span>
+  <div id="sb-right">
+    <button class="sb-action sec" onclick="showInstall()">📱 Instalar app</button>
+    <button class="sb-action acc" onclick="askClaude('¿Cómo monetizo cut.studio? Quiero planes free, pro y estudio con Stripe.')">Monetizar ↗</button>
+  </div>
+</div>
+
+<!-- INSTALL MODAL -->
+<div id="modal-install">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeInstall()">✕</button>
+    <div class="modal-logo">CUT<em>.</em>STUDIO</div>
+    <div class="modal-sub">INSTALAR COMO APP · PWA</div>
+    <div class="plat-grid">
+      <button class="plat" onclick="showSteps('ios')"><div class="plat-ic">🍎</div><div class="plat-name">iPhone/iPad</div><div class="plat-hint">Safari · iOS 16+</div></button>
+      <button class="plat" onclick="showSteps('android')"><div class="plat-ic">🤖</div><div class="plat-name">Android</div><div class="plat-hint">Chrome</div></button>
+      <button class="plat" onclick="showSteps('mac')"><div class="plat-ic">💻</div><div class="plat-name">Mac / PC</div><div class="plat-hint">Chrome · Edge</div></button>
+      <button class="plat" onclick="showSteps('ios')"><div class="plat-ic">🌐</div><div class="plat-name">Cualquier</div><div class="plat-hint">Abrir URL</div></button>
+    </div>
+    <div class="modal-steps" id="install-steps">
+      <div class="mstep"><div class="msn">1</div><div class="mstxt">Abre cut.studio en <strong>Safari</strong> (iOS) o <strong>Chrome</strong> (Android)</div></div>
+      <div class="mstep"><div class="msn">2</div><div class="mstxt">Toca <strong>Compartir ⬆</strong> o el menú <strong>⋮</strong></div></div>
+      <div class="mstep"><div class="msn">3</div><div class="mstxt">Selecciona <strong>"Agregar a pantalla de inicio"</strong></div></div>
+      <div class="mstep"><div class="msn">4</div><div class="mstxt"><strong>¡Listo!</strong> cut.studio aparece como app 🎉</div></div>
+    </div>
+    <div class="modal-url">
+      <span id="modal-url-txt">cutstudio.netlify.app</span>
+      <button class="copy-url" onclick="copyURL()">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILE INPUTS -->
+<input type="file" id="fi-vid" accept="video/*">
+<input type="file" id="fi-audio" accept="audio/*,video/*">
+<input type="file" id="fi-reel" accept="video/*" multiple>
+<input type="file" id="fi-music" accept="audio/*">
+
+<script>
+/* ── GLOBALS ── */
+let currentPage = 'home';
+let edDur = 0, edPaused = 0, edPlaying = false, edRaf = null;
+let audCtx = null, audBuf = null, audClean = null, audSrc = null, audGain = null;
+let audPlaying = false, audPaused = 0, audStart = 0, audRaf = null;
+let audFileName = '';
+let subColor = '#fff', subBg = 'rgba(0,0,0,0.7)', subSize = 14;
+let subItems = [], subAnimIdx = 0, subAnimInt = null;
+let scriptFmt = 'cant', scriptPlat = 'tiktok';
+let lastScript = '';
+let reelPlaying = false, reelTime = 0, reelDur = 30, reelRaf = null, reelGen = false;
+let beatBars = [], beatInt = null;
+let reelSubs = ['Hay canciones que no se olvidan.','Se quedan guardadas en el pecho.','Esta noche, el cantinero las recuerda.','Con un mezcal en la mano.','Y una historia que vale la pena.'];
+let reelSubIdx = 0, reelSubInt = null;
+let projects = JSON.parse(localStorage.getItem('cs-projects') || '[]');
+
+/* ── NAV ── */
+function goTo(page, tabEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.getElementById('pg-' + page).classList.add('on');
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('on'));
+  if (tabEl) tabEl.classList.add('on');
+  else document.getElementById('tab-' + page)?.classList.add('on');
+  currentPage = page;
+}
+
+/* ── STATUS ── */
+function setStatus(msg, active = false) {
+  document.getElementById('sb-txt').textContent = msg;
+  document.getElementById('sb-dot').className = active ? 'on' : '';
+}
+
+/* ── CLAUDE API (via Netlify Function) ── */
+async function callClaude(userMsg, system = '') {
+  try {
+    const res = await fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: userMsg }],
+        system: system || 'Eres un asistente creativo experto en producción de contenido para redes sociales en español mexicano.',
+        max_tokens: 1024,
+      }),
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || 'Sin respuesta';
+  } catch (e) {
+    return 'Error al conectar con la IA: ' + e.message;
+  }
+}
+
+async function askClaude(prompt) {
+  setStatus('IA pensando…', true);
+  const resp = await callClaude(prompt);
+  setStatus('IA respondió');
+  alert(resp);
+}
+
+/* ── UTILS ── */
+function fmt(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function dl(name, content) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' })); a.download = name; a.click(); }
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ── EDITOR ── */
+document.getElementById('fi-vid').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const vid = document.getElementById('ed-vid');
+  vid.src = URL.createObjectURL(f);
+  document.getElementById('ed-screen').classList.add('has-v');
+  vid.onloadedmetadata = () => {
+    edDur = vid.duration;
+    addEdClip(f.name);
+    setStatus('Video cargado: ' + f.name);
+    updEdTC();
+  };
+  vid.ontimeupdate = () => { updEdTC(); updEdPH(); };
+  vid.onplay = () => { document.getElementById('ed-playbtn').textContent = '⏸'; edPlaying = true; };
+  vid.onpause = () => { document.getElementById('ed-playbtn').textContent = '▶'; edPlaying = false; };
+});
+
+function edTogglePlay() {
+  const v = document.getElementById('ed-vid');
+  if (v.paused) v.play(); else v.pause();
+}
+function edSeek(t) { document.getElementById('ed-vid').currentTime = t; }
+function edSeekEnd() { const v = document.getElementById('ed-vid'); if (edDur) v.currentTime = edDur - 0.1; }
+function edVol(v) { document.getElementById('ed-vid').volume = parseFloat(v); }
+function edCut() {
+  const v = document.getElementById('ed-vid'); if (!edDur) return;
+  const pct = v.currentTime / edDur;
+  const lane = document.getElementById('tl-v');
+  const m = document.createElement('div');
+  m.style.cssText = 'position:absolute;top:0;bottom:0;width:1.5px;background:var(--acc);left:' + Math.round(pct * lane.offsetWidth) + 'px;pointer-events:none;';
+  lane.appendChild(m);
+  setStatus('Corte marcado en ' + fmt(v.currentTime));
+}
+function updEdTC() {
+  const v = document.getElementById('ed-vid');
+  document.getElementById('ed-tc').textContent = fmt(v.currentTime) + ' / ' + fmt(edDur || 0);
+}
+function updEdPH() {
+  if (!edDur) return;
+  const v = document.getElementById('ed-vid');
+  const pct = v.currentTime / edDur;
+  ['tl-v', 'tl-a', 'tl-t'].forEach(id => {
+    const lane = document.getElementById(id);
+    const ph = lane?.querySelector('.tl-ph');
+    if (ph) ph.style.left = Math.round(pct * lane.offsetWidth) + 'px';
+  });
+}
+function addEdClip(name) {
+  const lane = document.getElementById('tl-v');
+  lane.querySelectorAll('.tl-clip').forEach(c => c.remove());
+  const cl = document.createElement('div');
+  cl.className = 'tl-clip';
+  cl.style.cssText = 'left:2px;width:calc(100% - 4px);background:#2d1a40;color:#c090f0;';
+  cl.textContent = name.length > 20 ? name.substring(0, 20) + '…' : name;
+  lane.appendChild(cl);
+  const a = document.createElement('div');
+  a.className = 'tl-clip';
+  a.style.cssText = 'left:2px;width:calc(100% - 4px);background:#1e3d2e;color:#6dba8e;';
+  a.textContent = 'Audio original';
+  document.getElementById('tl-a').appendChild(a);
+}
+
+let edCurTool = 'sel';
+function setEdTool(t, btn) {
+  edCurTool = t;
+  document.querySelectorAll('.etool').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const panel = document.getElementById('ed-tool-panel');
+  if (t === 'txt') {
+    panel.innerHTML = `
+      <div class="es-row"><label>Texto</label><input class="es-inp" id="ed-txt-inp" type="text" placeholder="Escribe aquí..." oninput="updEdTxt()"></div>
+      <div class="es-row"><label>Tamaño <span id="et-sz">15px</span></label><input type="range" min="12" max="36" value="15" step="1" oninput="document.getElementById('et-sz').textContent=this.value+'px';updEdTxtSize(this.value)"></div>
+      <div class="es-row"><label>Posición</label><select class="es-inp" id="ed-txt-pos" onchange="updEdTxt()"><option value="bottom">Abajo</option><option value="center">Centro</option><option value="top">Arriba</option></select></div>
+      <button class="apply" onclick="applyEdTxt()">Aplicar texto</button>`;
+  } else {
+    panel.innerHTML = '<div style="font-size:12px;color:var(--muted)">' + (t === 'cut' ? 'Presiona ✂ en la barra de controles para marcar cortes' : 'Clic en los clips del timeline para seleccionarlos') + '</div>';
+  }
+}
+function updEdTxt() {
+  const v = document.getElementById('ed-txt-inp')?.value || '';
+  const pos = document.getElementById('ed-txt-pos')?.value || 'bottom';
+  const ov = document.getElementById('ed-txt-ov');
+  const sp = document.getElementById('ed-txt-span');
+  sp.textContent = v;
+  sp.style.background = 'rgba(0,0,0,0.6)';
+  sp.style.color = '#fff';
+  ov.style.top = pos === 'top' ? '0' : 'auto';
+  ov.style.bottom = pos === 'bottom' ? '0' : pos === 'center' ? '40%' : 'auto';
+  ov.className = 'txt-ov' + (v ? ' on' : '');
+}
+function updEdTxtSize(v) { document.getElementById('ed-txt-span').style.fontSize = v + 'px'; }
+function applyEdTxt() {
+  const v = document.getElementById('ed-txt-inp')?.value; if (!v) return;
+  const lane = document.getElementById('tl-t');
+  const cl = document.createElement('div');
+  cl.className = 'tl-clip';
+  cl.style.cssText = 'left:2px;width:120px;background:#2a1010;color:#f08060;';
+  cl.textContent = v.length > 12 ? v.substring(0, 12) + '…' : v;
+  lane.appendChild(cl);
+  setStatus('Texto aplicado al timeline');
+}
+
+function saveProject() {
+  const name = document.getElementById('proj-name').value || 'Sin título';
+  const proj = { name, date: new Date().toLocaleDateString('es-MX'), thumb: '🎬', tags: ['Nuevo'] };
+  projects.unshift(proj);
+  localStorage.setItem('cs-projects', JSON.stringify(projects.slice(0, 20)));
+  buildProjects();
+  setStatus('Proyecto guardado: ' + name);
+}
+
+/* ── AUDIO ── */
+document.getElementById('fi-audio').addEventListener('change', e => { const f = e.target.files[0]; if (f) loadAudio(f); });
+
+function setNoise(t, btn) { document.querySelectorAll('.nb').forEach(b => b.classList.remove('on')); btn.classList.add('on'); }
+
+async function loadAudio(file) {
+  if (!audCtx) audCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audFileName = file.name;
+  setStatus('Leyendo audio: ' + file.name + '…', true);
+  const arr = await file.arrayBuffer();
+  try {
+    audBuf = await audCtx.decodeAudioData(arr);
+    document.getElementById('aud-drop').style.display = 'none';
+    document.getElementById('wv-wrap').classList.add('on');
+    drawWaveform(audBuf, false);
+    document.getElementById('proc-btn').disabled = false;
+    setStatus('Audio cargado: ' + file.name + ' · ' + fmt(audBuf.duration));
+    setMeters(82, 0, 0, 0);
+  } catch (e) { setStatus('Error al leer el audio. Prueba con MP3 o WAV.'); }
+}
+
+function drawWaveform(buf, clean) {
+  const cv = document.getElementById('wv');
+  const c = cv.getContext('2d');
+  cv.width = cv.offsetWidth || 500; cv.height = 80;
+  c.fillStyle = '#12101e'; c.fillRect(0, 0, cv.width, cv.height);
+  const data = buf.getChannelData(0);
+  const step = Math.ceil(data.length / cv.width);
+  const mid = cv.height / 2;
+  for (let i = 0; i < cv.width; i++) {
+    let max = 0;
+    for (let j = 0; j < step; j++) { const v = Math.abs(data[i * step + j] || 0); if (v > max) max = v; }
+    const h = max * mid * 0.9;
+    c.fillStyle = clean ? '#00e5a0' : '#3d5a50';
+    c.fillRect(i, mid - h, 1, h * 2);
+  }
+}
+
+function setMeters(o, cl, n, q) {
+  [['orig', o, 'var(--acc)'], ['clean', cl, 'var(--acc3)'], ['noise', n, '#c87060'], ['qual', q, 'var(--acc3)']].forEach(([k, v, color]) => {
+    document.getElementById('mf-' + k).style.width = v + '%';
+    document.getElementById('mv-' + k).textContent = v ? v + '%' : '—';
+  });
+}
+
+async function processAudio() {
+  if (!audBuf) return;
+  const btn = document.getElementById('proc-btn');
+  btn.disabled = true; btn.textContent = 'Procesando…';
+  setStatus('Analizando frecuencias…', true);
+  await delay(600);
+  setStatus('Aplicando filtro espectral…', true);
+  await delay(800);
+  setStatus('Eliminando ruido…', true);
+  await delay(700);
+
+  const nr = parseInt(document.getElementById('nr-v').textContent) / 100;
+  const offline = new OfflineAudioContext(audBuf.numberOfChannels, audBuf.length, audBuf.sampleRate);
+  const src = offline.createBufferSource();
+  src.buffer = audBuf;
+  const hpf = offline.createBiquadFilter();
+  hpf.type = 'highpass'; hpf.frequency.value = 80;
+  const gain = offline.createGain();
+  gain.gain.value = 0.95 + nr * 0.05;
+  src.connect(hpf); hpf.connect(gain); gain.connect(offline.destination);
+  src.start(0);
+  audClean = await offline.startRendering();
+  drawWaveform(audClean, true);
+  const nd = Math.round(nr * 65 + 10);
+  setMeters(82, 96, nd, Math.round(88 + nr * 10));
+  document.getElementById('dl-btn').style.display = 'block';
+  btn.textContent = 'Limpiar audio ✦'; btn.disabled = false;
+  setStatus('Audio limpio — ' + nd + '% ruido eliminado');
+}
+
+function audTogglePlay() {
+  if (!audBuf && !audClean) return;
+  if (!audCtx) audCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audPlaying) {
+    audPaused = audCtx.currentTime - audStart;
+    if (audSrc) { try { audSrc.stop(); } catch (e) { } }
+    audPlaying = false;
+    document.getElementById('aud-playbtn').textContent = '▶';
+  } else {
+    if (audCtx.state === 'suspended') audCtx.resume();
+    const buf = audClean || audBuf;
+    audSrc = audCtx.createBufferSource();
+    audSrc.buffer = buf;
+    audGain = audCtx.createGain();
+    audGain.gain.value = parseInt(document.getElementById('vo-v').textContent) / 100;
+    audSrc.connect(audGain); audGain.connect(audCtx.destination);
+    audSrc.start(0, audPaused);
+    audStart = audCtx.currentTime - audPaused;
+    audPlaying = true;
+    document.getElementById('aud-playbtn').textContent = '⏸';
+    audSrc.onended = () => { audPlaying = false; document.getElementById('aud-playbtn').textContent = '▶'; };
+    audLoop();
+  }
+}
+function audLoop() {
+  if (!audPlaying) return;
+  const buf = audClean || audBuf;
+  const t = Math.min(audCtx.currentTime - audStart, buf?.duration || 0);
+  document.getElementById('aud-tc').textContent = fmt(t) + ' / ' + fmt(buf?.duration || 0);
+  audRaf = requestAnimationFrame(audLoop);
+}
+function audSeek(t) { audPaused = t; }
+function audSeekEnd() { const buf = audClean || audBuf; if (buf) audPaused = buf.duration - 0.1; }
+function audVol(v) { if (audGain) audGain.gain.value = v / 100; }
+
+function updEQ(band, val) {
+  document.getElementById('ev' + band).textContent = (val > 0 ? '+' : '') + val;
+}
+function applyPreset(name, btn) {
+  document.querySelectorAll('.pre-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const presets = { balanced: [0,0,0,0,0,0], voice: [-8,2,4,3,1,-2], outdoor: [-6,-3,2,3,4,2], studio: [2,1,0,2,3,4], podcast: [-4,0,3,4,2,0] };
+  const p = presets[name] || presets.balanced;
+  const bands = ['60','250','1k','4k','8k','16k'];
+  document.querySelectorAll('.eq-v').forEach((sl, i) => { sl.value = p[i]; updEQ(bands[i], p[i]); });
+}
+
+async function downloadClean() {
+  if (!audClean) return;
+  const offline = new OfflineAudioContext(audClean.numberOfChannels, audClean.length, audClean.sampleRate);
+  const src = offline.createBufferSource(); src.buffer = audClean;
+  src.connect(offline.destination); src.start(0);
+  const rendered = await offline.startRendering();
+  const blob = bufToWav(rendered);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'audio-limpio-' + (audFileName.replace(/\.[^.]+$/, '') || 'output') + '.wav';
+  a.click();
+}
+function bufToWav(buf) {
+  const nc = buf.numberOfChannels, sr = buf.sampleRate, len = buf.length;
+  const ab = new ArrayBuffer(44 + len * nc * 2), dv = new DataView(ab);
+  const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); dv.setUint32(4,36+len*nc*2,true); ws(8,'WAVE'); ws(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,nc,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*nc*2,true); dv.setUint16(32,nc*2,true);
+  dv.setUint16(34,16,true); ws(36,'data'); dv.setUint32(40,len*nc*2,true);
+  let off = 44;
+  for (let i = 0; i < len; i++) for (let ch = 0; ch < nc; ch++) {
+    const s = Math.max(-1,Math.min(1,buf.getChannelData(ch)[i]));
+    dv.setInt16(off,s<0?s*0x8000:s*0x7FFF,true); off+=2;
+  }
+  return new Blob([ab],{type:'audio/wav'});
+}
+
+/* ── IA TABS ── */
+function setIATab(t, el) {
+  document.querySelectorAll('.iatab').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.ia-panel').forEach(p => p.classList.remove('on'));
+  document.getElementById('iap-' + t).classList.add('on');
+}
+
+/* ── SUBTÍTULOS ── */
+function setSubColor(c, sw) {
+  subColor = c;
+  sw.closest('.sw-row')?.querySelectorAll('.sw').forEach(s => s.classList.remove('on'));
+  sw.classList.add('on');
+  updSubPrev();
+}
+function setSubBg(c, sw) {
+  subBg = c;
+  sw.closest('.sw-row')?.querySelectorAll('.sw').forEach(s => s.classList.remove('on'));
+  sw.classList.add('on');
+  updSubPrev();
+}
+function setSubSize(v) {
+  subSize = parseInt(v);
+  document.getElementById('fsz-v').textContent = v + 'px';
+  updSubPrev();
+}
+function updSubPrev(txt) {
+  const el = document.getElementById('sub-prev-txt');
+  el.style.color = subColor; el.style.background = subBg; el.style.fontSize = subSize + 'px';
+  const pos = document.getElementById('sub-pos').value;
+  const frame = document.getElementById('sub-frame');
+  frame.style.alignItems = pos === 'top' ? 'flex-start' : pos === 'center' ? 'center' : 'flex-end';
+  if (txt !== undefined) el.textContent = txt;
+}
+
+const demoSubItems = [
+  { start:'0:00', end:'0:04', text:'Hay canciones que no se olvidan.' },
+  { start:'0:04', end:'0:08', text:'Se quedan guardadas en el pecho.' },
+  { start:'0:08', end:'0:13', text:'Esperando el momento exacto para salir.' },
+  { start:'0:13', end:'0:18', text:'Esta noche, el cantinero las recuerda.' },
+  { start:'0:18', end:'0:23', text:'Con un mezcal en la mano.' },
+];
+
+async function genSubs(mode) {
+  const list = document.getElementById('sub-list');
+  list.innerHTML = '<div style="padding:14px;text-align:center;font-size:12px;color:var(--acc4)">Transcribiendo con IA…</div>';
+  setStatus('Generando subtítulos…', true);
+  await delay(1600);
+  subItems = demoSubItems;
+  renderSubList();
+  animSubs();
+  setStatus('Subtítulos generados — ' + subItems.length + ' líneas');
+}
+
+function renderSubList() {
+  const list = document.getElementById('sub-list'); list.innerHTML = '';
+  subItems.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'sub-item' + (i === 0 ? ' on' : '');
+    div.innerHTML = '<span class="sub-time">' + s.start + '</span><span>' + s.text + '</span>';
+    div.onclick = () => { document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('on')); div.classList.add('on'); updSubPrev(s.text); };
+    list.appendChild(div);
+  });
+  updSubPrev(subItems[0].text);
+}
+function animSubs() {
+  if (subAnimInt) clearInterval(subAnimInt);
+  subAnimIdx = 0;
+  subAnimInt = setInterval(() => {
+    subAnimIdx = (subAnimIdx + 1) % subItems.length;
+    document.querySelectorAll('.sub-item').forEach((el, i) => el.classList.toggle('on', i === subAnimIdx));
+    updSubPrev(subItems[subAnimIdx].text);
+  }, 2000);
+}
+function exportSRT() {
+  if (!subItems.length) { alert('Genera subtítulos primero'); return; }
+  let s = '';
+  subItems.forEach((i, idx) => { s += (idx+1)+'\n'+i.start.replace(':','00:0')+',000 --> '+i.end.replace(':','00:0')+',000\n'+i.text+'\n\n'; });
+  dl('subtitulos.srt', s);
+}
+function exportVTT() {
+  if (!subItems.length) { alert('Genera subtítulos primero'); return; }
+  let s = 'WEBVTT\n\n';
+  subItems.forEach(i => { s += i.start+' --> '+i.end+'\n'+i.text+'\n\n'; });
+  dl('subtitulos.vtt', s);
+}
+
+/* ── GUIONES ── */
+function setSF(f, btn) {
+  scriptFmt = f;
+  document.querySelectorAll('[id^=sf-]').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function setSP(p, btn) {
+  scriptPlat = p;
+  document.querySelectorAll('[id^=sp-]').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+async function generateScript() {
+  const topic = document.getElementById('sc-topic').value || 'una canción de amor';
+  const drink = document.getElementById('sc-drink').value || 'mezcal';
+  const ctx = document.getElementById('sc-ctx').value || '';
+  const tone = document.getElementById('sc-tone').value;
+  const dur = document.getElementById('sc-dur').value;
+  const btn = document.getElementById('gen-btn');
+  const out = document.getElementById('sc-out');
+
+  btn.disabled = true; btn.textContent = 'Generando…';
+  out.innerHTML = '<span style="color:var(--acc4)">Escribiendo guión…</span>';
+  setStatus('Claude está escribiendo tu guión…', true);
+
+  const toneMap = { cant:'estilo cantinero de barrio, nostálgico, poético, cálido, como platicando con un amigo', viral:'gancho viral, primera línea impactante, ritmo rápido', poet:'narrativo profundo, metáforas, poético, como un poema hablado', humor:'con humor ligero y mexicano sin perder la emoción' };
+  const platMap = { tiktok:'TikTok (máximo 60s, gancho en los primeros 3 segundos)', reels:'Instagram Reels (emocional, estético)', yt:'YouTube (más largo, narrativo)', fb:'Facebook (comunidad, nostalgia, compartible)' };
+  const fmtMap = { cant:'El Cantinero del Recuerdo — Manuel narra historias de canciones y bebidas con emoción', reel:'Reel viral de tendencia', promo:'Promoción de negocio o servicio', tuto:'Tutorial paso a paso' };
+
+  const prompt = `Eres guionista experto en contenido para redes sociales en español mexicano.
+Escribe un guión de ${dur} segundos en ${toneMap[tone]}.
+Formato: ${fmtMap[scriptFmt]}.
+Plataforma: ${platMap[scriptPlat]}.
+Tema/canción: ${topic}.
+Bebida: ${drink}.
+${ctx ? 'Contexto: ' + ctx : ''}
+Incluye etiquetas [GANCHO], [DESARROLLO] y [CIERRE] visibles.
+Escríbelo listo para leer, natural, sin sonar a IA.`;
+
+  lastScript = await callClaude(prompt, 'Eres guionista experto en contenido para redes sociales en español mexicano. Writes scripts that feel human, warm, and authentic.');
+  out.textContent = lastScript;
+  btn.disabled = false; btn.textContent = '✦ Generar guión con IA';
+  setStatus('Guión generado — ' + lastScript.split(' ').length + ' palabras aprox.');
+}
+
+function copyScript() {
+  if (!lastScript) return;
+  navigator.clipboard.writeText(lastScript).then(() => setStatus('Guión copiado al portapapeles'));
+}
+function exportScript() {
+  if (!lastScript) return;
+  dl('guion-cutstudio.txt', lastScript);
+}
+
+/* ── VOICEOVER ── */
+function demoVoice() {
+  const txt = document.getElementById('vo-text').value;
+  if (!txt.trim()) { alert('Escribe el texto primero'); return; }
+  if (!('speechSynthesis' in window)) { alert('Tu navegador no soporta síntesis de voz'); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(txt);
+  u.lang = 'es-MX'; u.rate = parseFloat(document.getElementById('vo-speed').value); u.pitch = 0.85;
+  speechSynthesis.speak(u);
+  setStatus('Reproduciendo voiceover demo…', true);
+  u.onend = () => setStatus('Voiceover finalizado');
+}
+
+/* ── REELS ── */
+function setRF(f, btn) { document.querySelectorAll('[id^=rf-]').forEach(b => b.classList.remove('on')); btn.classList.add('on'); }
+function setRC(c, btn) { document.querySelectorAll('[id^=rc-]').forEach(b => b.classList.remove('on')); btn.classList.add('on'); }
+
+document.getElementById('fi-reel').addEventListener('change', e => {
+  const files = Array.from(e.target.files);
+  files.forEach((f, i) => addReelClip(f.name, i));
+  setStatus(files.length + ' clips cargados para el reel');
+});
+document.getElementById('fi-music').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const lane = document.getElementById('rl-lane-m');
+  lane.querySelectorAll('.tl-clip').forEach(c => c.remove());
+  const cl = document.createElement('div');
+  cl.className = 'tl-clip';
+  cl.style.cssText = 'left:2px;width:calc(100% - 4px);background:#1a2a10;color:#80d060;';
+  cl.textContent = '♪ ' + f.name.substring(0, 18);
+  lane.appendChild(cl);
+  setStatus('Música cargada: ' + f.name);
+});
+
+function addReelClip(name, idx) {
+  const lane = document.getElementById('rl-lane-v');
+  const cl = document.createElement('div');
+  cl.className = 'tl-clip';
+  cl.style.cssText = 'left:' + (2 + idx * 80) + 'px;width:76px;background:#2d1a40;color:#c090f0;';
+  cl.textContent = name.length > 9 ? name.substring(0, 9) + '…' : name;
+  lane.appendChild(cl);
+}
+
+async function generateReel() {
+  const btn = document.getElementById('regen-btn');
+  btn.disabled = true; btn.textContent = '↻ Generando…';
+  setStatus('Analizando clips y música…', true);
+  await delay(700);
+  setStatus('Detectando beats y puntos de corte…', true);
+  await delay(800);
+  setStatus('Sincronizando clips con el tempo…', true);
+  await delay(600);
+  setStatus('Aplicando transiciones…', true);
+  await delay(500);
+  setStatus('Generando subtítulos del reel…', true);
+  await delay(500);
+
+  // Build text timeline
+  const laneT = document.getElementById('rl-lane-t');
+  laneT.querySelectorAll('.tl-clip').forEach(c => c.remove());
+  const lW = laneT.offsetWidth - 8;
+  reelSubs.forEach((s, i) => {
+    const cl = document.createElement('div');
+    cl.className = 'tl-clip';
+    cl.style.cssText = 'left:' + (2 + i * (lW / reelSubs.length)) + 'px;width:' + (lW / reelSubs.length - 4) + 'px;background:#2a1010;color:#f08060;';
+    cl.textContent = s.length > 10 ? s.substring(0, 10) + '…' : s;
+    laneT.appendChild(cl);
+  });
+
+  reelGen = true;
+  startBeats();
+  startReelSubs();
+  btn.disabled = false; btn.textContent = '✦ Regenerar Reel';
+  setStatus('✦ Reel generado — ' + reelDur + 's · listo para exportar');
+}
+
+function startBeats() {
+  const wrap = document.getElementById('rl-beats'); wrap.innerHTML = '';
+  beatBars = [];
+  for (let i = 0; i < 16; i++) {
+    const b = document.createElement('div'); b.className = 'beat-b'; b.style.height = '4px';
+    wrap.appendChild(b); beatBars.push(b);
+  }
+  if (beatInt) clearInterval(beatInt);
+  beatInt = setInterval(() => {
+    beatBars.forEach(b => { b.style.height = (Math.random() * 18 + 3) + 'px'; b.style.opacity = 0.3 + Math.random() * 0.7; });
+  }, 130);
+}
+function startReelSubs() {
+  if (reelSubInt) clearInterval(reelSubInt);
+  reelSubIdx = 0; updReelSub();
+  reelSubInt = setInterval(() => { reelSubIdx = (reelSubIdx + 1) % reelSubs.length; updReelSub(); }, 2200);
+}
+function updReelSub() {
+  const el = document.getElementById('rl-sub-txt');
+  el.style.opacity = 0;
+  setTimeout(() => { el.textContent = reelSubs[reelSubIdx]; el.style.opacity = 1; el.style.transition = 'opacity .3s'; }, 150);
+}
+function rlTogglePlay() {
+  if (!reelGen) { generateReel(); return; }
+  reelPlaying = !reelPlaying;
+  document.getElementById('rl-playbtn').textContent = reelPlaying ? '⏸' : '▶';
+  if (reelPlaying) reelLoop(); else { cancelAnimationFrame(reelRaf); setStatus('Reel pausado en ' + fmt(reelTime)); }
+}
+function reelLoop() {
+  if (!reelPlaying) return;
+  reelTime = Math.min(reelTime + 0.05, reelDur);
+  document.getElementById('rl-tc').textContent = fmt(reelTime) + ' / ' + fmt(reelDur);
+  const pct = reelTime / reelDur;
+  document.getElementById('rl-prog-bar').style.width = (pct * 100) + '%';
+  ['rl-lane-v', 'rl-lane-m', 'rl-lane-t'].forEach((id, i) => {
+    const lane = document.getElementById(id);
+    const ph = lane?.querySelector('.tl-ph');
+    if (ph) ph.style.left = Math.round(pct * (lane.offsetWidth - 8) + 4) + 'px';
+  });
+  if (reelTime >= reelDur) { reelPlaying = false; reelTime = 0; document.getElementById('rl-playbtn').textContent = '▶'; setStatus('Reel finalizado'); return; }
+  reelRaf = requestAnimationFrame(reelLoop);
+}
+function rlSeek(pct) { reelTime = pct === 0 ? 0 : reelDur; }
+
+async function runAnalysis() {
+  setStatus('Analizando potencial viral…', true);
+  await delay(1200);
+  const score = Math.round(72 + Math.random() * 20);
+  document.getElementById('ai-score').textContent = score;
+  const ms = [Math.round(70+Math.random()*25), Math.round(65+Math.random()*30), Math.round(60+Math.random()*35)];
+  ['1','2','3'].forEach((n,i) => {
+    document.getElementById('ai-m'+n).textContent = ms[i]+'%';
+    setTimeout(() => { document.getElementById('ai-b'+n).style.width = ms[i]+'%'; }, 200+i*100);
+  });
+  document.getElementById('ai-panel').classList.add('on');
+  setStatus('Viral score: ' + score + '/100 — ' + (score >= 80 ? 'Excelente potencial' : score >= 65 ? 'Buen potencial' : 'Mejorar enganche'));
+}
+
+/* ── PROJECTS ── */
+const defaultProjects = [
+  { name:'El Cantinero — La Bikina', thumb:'🥃', date:'hace 2 días', tags:['TikTok','Reels'], bg:'#1a0818' },
+  { name:'De la Garza Studio — Evento', thumb:'📸', date:'hace 5 días', tags:['YouTube'], bg:'#0a1a28' },
+  { name:'Reel Mezcal — Teaser', thumb:'🎬', date:'hace 1 semana', tags:['Story'], bg:'#0a1800' },
+  { name:'El Cantinero — Bésame Mucho', thumb:'🎵', date:'hace 1 semana', tags:['TikTok'], bg:'#1a1000' },
+  { name:'Promo Pa\'l Norte', thumb:'🎸', date:'hace 2 semanas', tags:['Reels'], bg:'#1a0a00' },
+];
+const tagColors = { TikTok:'#2a1020,#e85080', Reels:'#201028,#c880e8', YouTube:'#200808,#e86060', Story:'#201800,#e8a030', Facebook:'#082028,#4080e8', Nuevo:'#0a2018,#00e5a0' };
+
+function buildProjects() {
+  const g = document.getElementById('proj-grid'); g.innerHTML = '';
+  const all = [...projects.map(p => ({ ...p, isUser: true })), ...defaultProjects, { name:'Nuevo proyecto', thumb:'+', date:'', tags:[], bg:'#12101e', isNew:true }];
+  all.forEach(p => {
+    const c = document.createElement('div'); c.className = 'proj-card';
+    const tags = p.tags.map(t => { const [bg,col]=(tagColors[t]||'#1a1a1a,#888').split(','); return `<span class="proj-tag" style="background:${bg};color:${col};border:0.5px solid ${col}40">${t}</span>`; }).join('');
+    c.innerHTML = `<div class="proj-thumb" style="background:${p.bg||'#12101e'}">${p.thumb}</div><div class="proj-info"><div class="proj-name">${p.name}</div>${p.date?'<div class="proj-meta">'+p.date+'</div>':''}${tags?'<div class="proj-tags">'+tags+'</div>':''}</div>`;
+    c.onclick = () => { if (p.isNew) goTo('editor',document.getElementById('tab-editor')); else setStatus('Abriendo: ' + p.name); };
+    g.appendChild(c);
+  });
+}
+buildProjects();
+
+/* ── INSTALL MODAL ── */
+function showInstall() { document.getElementById('modal-install').classList.add('on'); }
+function closeInstall() { document.getElementById('modal-install').classList.remove('on'); }
+function showSteps(plat) {
+  const steps = {
+    ios: [['Abre cut.studio en','Safari en tu iPhone'],['Toca el ícono','Compartir ⬆ abajo'],['Selecciona','Agregar a pantalla de inicio'],['¡Listo!','cut.studio aparece como app']],
+    android: [['Abre cut.studio en','Chrome en Android'],['Toca el menú','⋮ arriba a la derecha'],['Selecciona','Agregar a pantalla principal'],['Chrome puede mostrar','un banner automático también']],
+    mac: [['Abre cut.studio en','Chrome o Edge'],['Busca el ícono','⬇ en la barra de URL'],['Haz clic en','Instalar cut.studio'],['Se abre como','app independiente sin barra']],
+  };
+  const s = steps[plat] || steps.ios;
+  document.getElementById('install-steps').innerHTML = s.map((st,i) => `<div class="mstep"><div class="msn">${i+1}</div><div class="mstxt">${st[0]} <strong>${st[1]}</strong></div></div>`).join('');
+}
+function copyURL() {
+  navigator.clipboard.writeText('cutstudio.netlify.app').then(() => {
+    document.querySelector('.copy-url').textContent = '¡Copiado!';
+    setTimeout(() => document.querySelector('.copy-url').textContent = 'Copiar', 2000);
+  });
+}
+
+/* ── PWA SERVICE WORKER ── */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+/* ── INIT ── */
+setStatus('cut.studio v1.0 — ' + new Date().toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'short' }));
+</script>
+</body>
+</html>
